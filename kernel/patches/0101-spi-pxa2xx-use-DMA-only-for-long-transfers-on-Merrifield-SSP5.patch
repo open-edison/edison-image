@@ -1,0 +1,63 @@
+From: The open-edison contributors
+Date: Mon, 19 Oct 2026 08:00:00 +1000
+Subject: [PATCH] spi: pxa2xx: use DMA only for long transfers on Merrifield SSP5
+
+On the Intel Edison (Merrifield), DMA on SSP5, the SPI on the Arduino
+expansion board header, costs more than PIO for short transfers. Measured
+with spidev at 8.3 MHz (us per transfer, PIO / DMA): 64 bytes 196 / 155,
+192 bytes 499 / ~540, 256 bytes 650 / ~780, 384 bytes 950 / ~900,
+512 bytes 1250 / ~950, 4096 bytes 9590 / 4410. DMA is slower than PIO from
+about 176 to 320 bytes, and faster from about 384.
+
+Add a minimum length for DMA to the controller data (0 keeps using the
+burst size), and set it to 512 bytes for Merrifield SSP5.
+
+An earlier version of this patch turned SSP5's DMA off after a hang that
+was blamed on it; that hang couldn't be reproduced, and an overnight soak
+with DMA (about 22,000 checked DMA transfers alongside a display and the
+board's ADC on the same controller) ran without errors.
+---diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
+index cae77ac..9e0d88d 100644
+--- a/drivers/spi/spi-pxa2xx-pci.c
++++ b/drivers/spi/spi-pxa2xx-pci.c
+@@ -239,6 +239,14 @@ static int mrfld_spi_setup(struct pci_dev *dev, struct pxa2xx_spi_controller *c)
+ 	c->dma_filter = lpss_dma_filter;
+ 	c->dma_burst_size = 8;
+ 	c->enable_dma = 1;
++
++	/*
++	 * On SSP5 (the Intel Edison's Arduino header), DMA is slower than PIO
++	 * for transfers up to about 320 bytes, and faster only from about 384
++	 * (twice as fast at 4 KiB). Use PIO below 512 bytes.
++	 */
++	if (ssp->port_id == 5)
++		c->dma_min_len = 512;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index ec7117a..de13f1f 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -928,7 +928,8 @@ static bool pxa2xx_spi_can_dma(struct spi_controller *controller,
+ 
+ 	return drv_data->controller_info->enable_dma &&
+ 	       xfer->len <= MAX_DMA_LEN &&
+-	       xfer->len >= drv_data->controller_info->dma_burst_size;
++	       xfer->len >= max_t(u32, drv_data->controller_info->dma_burst_size,
++				  drv_data->controller_info->dma_min_len);
+ }
+ 
+ static int pxa2xx_spi_transfer_one(struct spi_controller *controller,
+diff --git a/drivers/spi/spi-pxa2xx.h b/drivers/spi/spi-pxa2xx.h
+index 447be03..6234416 100644
+--- a/drivers/spi/spi-pxa2xx.h
++++ b/drivers/spi/spi-pxa2xx.h
+@@ -25,6 +25,7 @@ struct pxa2xx_spi_controller {
+ 	u8 num_chipselect;
+ 	u8 enable_dma;
+ 	u8 dma_burst_size;
++	u16 dma_min_len;	/* use DMA from this length (0: from the burst size) */
+ 	bool is_target;
+ 
+ 	/* DMA engine specific config */

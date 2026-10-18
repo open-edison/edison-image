@@ -27,7 +27,7 @@ Then `uv run scripts/flash.py` flashes `out/`.
 | `docker/rootfs.Dockerfile` | Tooling image for the rootfs build |
 | `kernel/fragments/edison-fw/` | Config fragments from edison-fw/meta-intel-edison (MIT), unchanged |
 | `kernel/fragments/open-edison.cfg` | Our overrides: built-in eMMC/ext4/console, systemd needs, debug off |
-| `kernel/patches/` | edison-fw patches still needed on 6.18 (8250_mid DMA, dwc3, tusb1210), and ours (`01xx`: spidev's chip select on ACPI, PIO on SPI5) |
+| `kernel/patches/` | edison-fw patches still needed on 6.18 (8250_mid DMA, dwc3, tusb1210), and ours (`01xx`: spidev's chip select on ACPI, DMA only for long transfers on SPI5) |
 | `kernel/required.txt` | Symbols the build checks after `olddefconfig` |
 | `rootfs/build-rootfs.sh` | `mmdebstrap`, overlay, firmware, ACPI tables, images |
 | `rootfs/packages.txt` | Debian packages |

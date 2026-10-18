@@ -101,10 +101,10 @@ Intel's drawing of where they are: Figure 5 on
   - SPI5 reaches the header on IO11–IO13 (MOSI, MISO, SCK) when a sketch's `SPI.begin()`
     switches those pins to it; otherwise they, including IO13 and DS2, work as GPIO.
     Sketches use it through `/dev/spidev5.1` (from v0.2.6). It works to 10 MHz; 25 MHz, the
-    controller's maximum, doesn't get through the level shifters intact. edison-image runs
-    SPI5 without DMA (a hang was once blamed on its DMA); long transfers reach ~420 KB/s,
-    and each transfer costs ~100 µs in the kernel, so libraries that send a byte at a time
-    are slow.
+    controller's maximum, doesn't get through the level shifters intact. From v0.2.8 SPI5
+    uses DMA for transfers of 512 bytes or more (about 900 KB/s) and PIO for shorter ones,
+    where DMA is slower; v0.2.6 and v0.2.7 use PIO only (about 420 KB/s). Each transfer
+    costs ~100 µs in the kernel, so libraries that send a byte at a time are slow.
 
 ## Quirks
 
