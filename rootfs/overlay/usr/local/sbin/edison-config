@@ -4,7 +4,7 @@
 #   edison-config init      format the config partition unless it is already ours
 #   edison-config restore   at boot: put saved users, passwords, hostname, time zone,
 #                           locale and network config back into the freshly flashed
-#                           rootfs
+#                           rootfs, and extra kernel arguments into U-Boot's environment
 #   edison-config save      after changes: copy them to the config partition
 #   edison-config wifi IF   make sure the WiFi config for IF exists (from the template)
 #
@@ -180,6 +180,19 @@ restore_files() {
     cp -a --remove-destination "$STATE/files/." /
 }
 
+# Extra kernel arguments (U-Boot's extra_bootargs, set by edison-apparmor) are written to
+# $STATE/extra_bootargs when set. A reflash rewrites U-Boot's environment: put them back.
+# They take effect from the next boot, as the kernel is already running.
+restore_bootargs() {
+    [ -s "$STATE/extra_bootargs" ] || return 0
+    want=$(cat "$STATE/extra_bootargs")
+    have=$(fw_printenv -n extra_bootargs 2>/dev/null || true)
+    if [ "$want" != "$have" ]; then
+        fw_setenv extra_bootargs "$want"
+        echo "restored the extra kernel arguments ($want); they apply from the next boot"
+    fi
+}
+
 # Set by restore when it finishes. Saving before the restore has run would record the
 # freshly flashed image's defaults over the saved settings.
 RESTORED=/run/edison-config.restored
@@ -203,6 +216,7 @@ restore() {
     restore_timezone
     restore_locale
     restore_files
+    restore_bootargs || echo "couldn't restore the extra kernel arguments" >&2
     if [ -s "$STATE/hostname" ]; then
         cp "$STATE/hostname" /etc/hostname
         hostname "$(cat /etc/hostname)"

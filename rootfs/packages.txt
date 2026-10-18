@@ -27,6 +27,9 @@ netbase
 ca-certificates
 openssh-server
 sudo
+# AppArmor's tools and Debian's profiles: inactive (the service is conditional on it) unless
+# AppArmor is enabled on the kernel command line with edison-apparmor.
+apparmor
 avahi-daemon
 libnss-mdns
 wpasupplicant

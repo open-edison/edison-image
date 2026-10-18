@@ -122,14 +122,12 @@ for common problems.
 - **SPI on the header** (IO11–IO13) is switched on by a sketch's `SPI.begin()`; until then
   those pins work as GPIO. Kernel drivers for SPI devices need an ACPI overlay: see
   `acpi/README.md`.
-- **Security modules:** the kernel has no active LSM policy. SELinux is disabled (Debian
-  ships no policy and doesn't use it by default). Stock Debian uses AppArmor; we don't
-  enable it yet. Planned approach, one image rather than two variants: build AppArmor into
-  the kernel (`CONFIG_SECURITY_APPARMOR=y`) but leave it out of the default LSM list, so it
-  costs nothing unless wanted. To opt in, `apt install apparmor` and add
-  `lsm=landlock,lockdown,yama,apparmor` (or the current list plus `apparmor`) to `bootargs`
-  in the U-Boot environment, then reboot; packages such as `avahi-daemon` then apply their
-  own profiles. If AppArmor later becomes the default, it's one config change.
+- **AppArmor** is built into the kernel and installed, but off: it costs nothing unless
+  wanted. `sudo edison-apparmor on` and a reboot turn it on (`off` reverses it,
+  `edison-apparmor status` shows it), after which Debian's profiles (for `avahi-daemon`,
+  among others) are enforced. It adds `apparmor` to the kernel's security modules through
+  U-Boot's `extra_bootargs`, which survives reflashing (after a reflash, from the second
+  boot). SELinux is disabled: Debian ships no policy for it.
 
 ## Licence
 

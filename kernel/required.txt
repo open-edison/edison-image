@@ -25,3 +25,7 @@ CONFIG_GPIO_PCA953X=y
 CONFIG_I2C_DESIGNWARE_PCI=y
 CONFIG_DEVTMPFS=y
 CONFIG_CGROUP_BPF=y
+# AppArmor built in, but off unless enabled on the command line (edison-apparmor)
+CONFIG_SECURITYFS=y
+CONFIG_SECURITY_APPARMOR=y
+CONFIG_LSM="landlock,lockdown,yama,loadpin,safesetid,ipe,bpf"
