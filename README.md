@@ -124,10 +124,12 @@ for common problems.
   `acpi/README.md`.
 - **AppArmor** is built into the kernel and installed, but off: it costs nothing unless
   wanted. `sudo edison-apparmor on` and a reboot turn it on (`off` reverses it,
-  `edison-apparmor status` shows it), after which Debian's profiles (for `avahi-daemon`,
-  among others) are enforced. It adds `apparmor` to the kernel's security modules through
-  U-Boot's `extra_bootargs`, which survives reflashing (after a reflash, from the second
-  boot). SELinux is disabled: Debian ships no policy for it.
+  `sudo edison-apparmor status` shows it). Debian's base profiles then load, though none of
+  the services in this image has one: it's for profiles you add (`apparmor-profiles`,
+  `apparmor-profiles-extra`, or your own). It adds `apparmor` to the kernel's security
+  modules through U-Boot's `extra_bootargs`, which survives reflashing (after a reflash,
+  from the second boot); a board flashed before v0.2.9 needs one full flash first. SELinux
+  is disabled: Debian ships no policy for it.
 
 ## Licence
 
