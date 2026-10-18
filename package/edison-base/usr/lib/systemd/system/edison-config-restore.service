@@ -8,10 +8,10 @@ Wants=network-pre.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/sbin/edison-config restore
+ExecStart=/usr/sbin/edison-config restore
 # SSH authorized_keys and the opt-in files list aren't watched for changes; save them (and
 # everything else) at every clean shutdown too.
-ExecStop=/usr/local/sbin/edison-config save
+ExecStop=/usr/sbin/edison-config save
 
 [Install]
 WantedBy=multi-user.target

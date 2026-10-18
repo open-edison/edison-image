@@ -6,4 +6,5 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       mmdebstrap gpg debian-archive-keyring ca-certificates curl \
       e2fsprogs dosfstools mtools u-boot-tools acpica-tools \
+      dpkg-dev debhelper \
  && rm -rf /var/lib/apt/lists/*

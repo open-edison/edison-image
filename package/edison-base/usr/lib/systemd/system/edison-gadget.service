@@ -10,7 +10,7 @@ Wants=network-pre.target
 # device controller appears, so the gadget gets (re)bound.
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/edison-gadget
+ExecStart=/usr/sbin/edison-gadget
 
 [Install]
 WantedBy=multi-user.target

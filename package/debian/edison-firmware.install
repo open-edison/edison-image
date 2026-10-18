@@ -1,0 +1,3 @@
+build/firmware/BCM43341B0.hcd /usr/lib/firmware/brcm/
+build/firmware/brcmfmac43340-sdio.txt /usr/lib/firmware/brcm/
+build/firmware/LICENCE.broadcom_bcm43xx /usr/share/doc/edison-firmware/

@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+# Built by package/build-debs.sh, which writes debian/changelog and puts the compiled ACPI
+# overlays and the fetched firmware in build/ first.
+
+%:
+	dh $@
+
+# Services take effect at the next boot: restarting edison-gadget, say, during an upgrade
+# over USB networking would cut off the session running apt.
+override_dh_installsystemd:
+	dh_installsystemd --no-start --no-stop-on-upgrade --no-restart-after-upgrade
+
+# The names brcmfmac asks for on this board first. They contain a space, which dh_link's
+# .links files can't express.
+execute_after_dh_install:
+	cd debian/edison-firmware/usr/lib/firmware/brcm \
+	 && ln -s brcmfmac43340-sdio.txt "brcmfmac43340-sdio.Intel Corporation-Merrifield.txt" \
+	 && ln -s brcmfmac43340-sdio.bin "brcmfmac43340-sdio.Intel Corporation-Merrifield.bin"
+
+# The Broadcom licence stays readable as it was shipped.
+override_dh_compress:
+	dh_compress -XLICENCE
+
+override_dh_gencontrol:
+	dh_gencontrol -- -Vkernel:Release=$(KERNEL_RELEASE) -Vkernel:Version=$(KERNEL_PKGVERSION)

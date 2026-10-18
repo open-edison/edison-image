@@ -1,0 +1,1 @@
+etc/kernel/postinst.d/zz-edison-boot etc/kernel/postrm.d/zz-edison-boot

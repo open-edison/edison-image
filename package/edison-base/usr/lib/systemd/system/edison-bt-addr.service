@@ -8,7 +8,7 @@ ConditionPathExists=/factory/bluetooth_address
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/sbin/edison-bt-addr
+ExecStart=/usr/sbin/edison-bt-addr
 
 [Install]
 WantedBy=bluetooth.target

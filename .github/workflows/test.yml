@@ -52,4 +52,5 @@ jobs:
         run: |
           shellcheck --version
           shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh \
-            rootfs/overlay/usr/local/sbin/*
+            package/build-debs.sh package/edison-base/usr/sbin/* \
+            package/edison-base/etc/kernel/postinst.d/* package/debian/*.postinst

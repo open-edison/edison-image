@@ -52,6 +52,8 @@ jobs:
           cp out/uboot/VERSION dist/UBOOT_VERSION
           cp out/image/packages.manifest dist/
           cp scripts/flash.py dist/
+          # Our packages, kernel included; releases publish them to the apt repository.
+          cp out/image/debs/*.deb dist/
           (cd dist && sha256sum u-boot.bin boot.vfat u-boot-env.bin rootfs.ext4.xz > SHA256SUMS)
           ls -l dist
           {

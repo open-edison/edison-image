@@ -8,4 +8,4 @@ Before=var-lib-edison.mount
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/sbin/edison-config init
+ExecStart=/usr/sbin/edison-config init

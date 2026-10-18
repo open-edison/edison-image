@@ -1,10 +1,11 @@
 #!/bin/bash
-# Build the Debian rootfs and the flashable images. Runs inside the tooling container
-# (docker/rootfs.Dockerfile) as root, with:
+# Build our packages, the Debian rootfs and the flashable images. Runs inside the tooling
+# container (docker/rootfs.Dockerfile) as root, with:
 #   /src         this repo (read-only)
-#   /in/kernel   kernel build output (vmlinuz, modules.tar.gz, RELEASE)
+#   /in/kernel   kernel build output (linux-image-*.deb, vmlinuz, RELEASE, PKGVERSION)
 #   /out         output directory
 #   /cache       optional: .deb cache kept between builds (only changed packages download)
+# and DEB_VERSION (our packages' version), IMAGE_VERSION and IMAGE_COMMIT set.
 set -euo pipefail
 
 SUITE=trixie
@@ -25,26 +26,20 @@ BUILT=$(date -u +%Y-%m-%dT%H:%MZ)
 URL=https://github.com/open-edison/edison-image
 EOF
 
+# Our packages (into /out/debs), installed below like any other: the image and apt deliver
+# the same files.
+bash /src/package/build-debs.sh
+chmod 0644 /out/debs/*.deb
+
 packages=$(grep -v -e '^#' -e '^$' /src/rootfs/packages.txt | paste -sd, -)
-
-# Fetch and verify the Edison firmware files before spending time on the rootfs.
-mkdir -p /work/firmware
-while read -r sha name url; do
-    case "$sha" in ''|'#'*) continue ;; esac
-    curl -fsSL --retry 3 -o "/work/firmware/$name" "$url"
-    echo "$sha  /work/firmware/$name" | sha256sum -c --quiet -
-done < /src/rootfs/firmware.lock
-
-# Compile the ACPI table overlays listed in acpi/tables.txt.
-mkdir -p /work/acpi
-defines=$(sed -n 's/^defines: *//p' /src/acpi/tables.txt)
-grep -E '^[^#].*\.asl$' /src/acpi/tables.txt | while read -r asl; do
-    # $defines is a list of separate -D flags.
-    # shellcheck disable=SC2086
-    iasl -vs $defines -I /src/acpi/meta-acpi -p "/work/acpi/${asl%.asl}" "/src/acpi/meta-acpi/$asl" >/dev/null \
-        || { echo "iasl failed for $asl" >&2; exit 1; }
+# mmdebstrap checks the paths outside the chroot, and apt hands them to dpkg inside it, so
+# the files must be at the same path in both (inside: setup hook).
+mkdir -p /work/debs
+cp /out/debs/*.deb /work/debs/
+debs=()
+for f in /work/debs/*.deb; do
+    debs+=("--include=/work/debs/${f##*/}")
 done
-ls /work/acpi/*.aml >/dev/null
 
 mkdir -p /cache/apt
 # Hooks are run by mmdebstrap with the rootfs path as $1, so most must stay unexpanded here.
@@ -52,30 +47,25 @@ mkdir -p /cache/apt
 mmdebstrap \
     --variant=apt \
     --components="main non-free-firmware" \
-    --include="$packages" \
+    --include="$packages" "${debs[@]}" \
     --skip=download/empty --skip=essential/unlink \
     --setup-hook='mkdir -p "$1/var/cache/apt/archives"' \
     --setup-hook='sync-in /cache/apt /var/cache/apt/archives/' \
+    --setup-hook='mkdir -p "$1/work/debs" && cp /work/debs/*.deb "$1/work/debs/"' \
     --customize-hook='sync-out /var/cache/apt/archives /cache/apt' \
+    --customize-hook='rm -rf "$1/work"' \
     --customize-hook='cp -r --no-preserve=mode,ownership /src/rootfs/overlay/. "$1/"' \
-    --customize-hook="tar -C \"\$1\" --keep-directory-symlink -xzf /in/kernel/modules.tar.gz" \
-    --customize-hook="chroot \"\$1\" depmod -a $release" \
-    --customize-hook='install -m 0644 -t "$1/usr/lib/firmware/brcm/" /work/firmware/*' \
-    --customize-hook='ln -sf brcmfmac43340-sdio.txt "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.Intel Corporation-Merrifield.txt"' \
-    --customize-hook='ln -sf brcmfmac43340-sdio.bin "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.Intel Corporation-Merrifield.bin"' \
     --customize-hook='test -e "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.bin" || { echo "firmware-brcm80211 lacks brcmfmac43340-sdio.bin" >&2; exit 1; }' \
-    --customize-hook='install -d "$1/usr/lib/edison/acpi" && install -m 0644 -t "$1/usr/lib/edison/acpi/" /work/acpi/*.aml' \
-    --customize-hook='chmod 0755 "$1"/usr/local/sbin/edison-*' \
-    --customize-hook='mkdir -p "$1/factory" "$1/var/lib/edison"' \
+    --customize-hook="test -f \"\$1/boot/vmlinuz-$release\" && test -d \"\$1/lib/modules/$release/kernel\"" \
     --customize-hook="install -d -m 0755 -o 1000 -g 1000 \"\$1/var/lib/edison-sketch\"" \
     --customize-hook='install -m 0644 /work/edison-image-release "$1/etc/edison-image-release"' \
     --customize-hook='. /work/edison-image-release; printf "\nopen-edison edison-image %s (kernel %s)\n%s\n\n" "$VERSION" "$KERNEL" "$URL" > "$1/etc/motd"' \
     --customize-hook='ln -sf /var/lib/edison/wifi/wpa_supplicant-wlan0.conf "$1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"' \
-    --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect /usr/sbin/mkfs.ext4 /usr/sbin/e2fsck /usr/bin/script /usr/bin/fw_setenv /usr/sbin/apparmor_parser; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
-    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget edison-bt-addr edison-config-restore edison-config-save.path edison-sketch edison-sketch.path edison-serial-hold edison-pinmux.socket rfkill-unblock wpa_supplicant@wlan0' \
-    --customize-hook='chroot "$1" groupadd -r -f gpio' \
+    --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect /usr/sbin/mkfs.ext4 /usr/sbin/e2fsck /usr/bin/script /usr/bin/fw_setenv /usr/sbin/apparmor_parser /usr/sbin/edison-config; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
+    --customize-hook='for u in edison-acpi-tables edison-gadget edison-config-restore edison-sketch.path edison-pinmux.socket; do chroot "$1" systemctl is-enabled -q $u || { echo "$u not enabled by edison-base" >&2; exit 1; }; done' \
+    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd wpa_supplicant@wlan0' \
     --customize-hook="chroot \"\$1\" useradd -m -s /bin/bash -G sudo,netdev,plugdev,dialout,gpio,i2c $USER_NAME" \
-    --customize-hook='find "$1/etc/systemd" "$1/etc/udev/rules.d" -type f -perm /022 -print -exec false {} + >&2 || { echo "group/world-writable config files in rootfs" >&2; exit 1; }' \
+    --customize-hook='find "$1/etc/systemd" "$1/etc/udev/rules.d" "$1/usr/lib/systemd/system" "$1/usr/lib/udev/rules.d" -type f -perm /022 -print -exec false {} + >&2 || { echo "group/world-writable config files in rootfs" >&2; exit 1; }' \
     --customize-hook="echo '$USER_NAME:$USER_NAME' | chroot \"\$1\" chpasswd" \
     --customize-hook="chroot \"\$1\" passwd --expire $USER_NAME" \
     --customize-hook='ln -sf /run/systemd/resolve/stub-resolv.conf "$1/etc/resolv.conf"' \
@@ -97,7 +87,8 @@ fi
 rm -f /out/rootfs.ext4
 mke2fs -q -t ext4 -L rootfs -d "$ROOT" /out/rootfs.ext4 "${size_kib}k"
 
-# FAT boot partition (64 MiB) with the kernel.
+# FAT boot partition (64 MiB) with the kernel; later kernels come from the linux-image
+# packages (edison-base's kernel hook copies them here).
 rm -f /out/boot.vfat
 mkfs.vfat -n BOOT -C /out/boot.vfat 65536 >/dev/null
 mcopy -i /out/boot.vfat /in/kernel/vmlinuz ::vmlinuz

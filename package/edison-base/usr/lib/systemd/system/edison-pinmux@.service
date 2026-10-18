@@ -4,7 +4,7 @@ Description=Switch an Arduino PWM pin to its PWM function
 After=sys-kernel-debug.mount
 
 [Service]
-ExecStart=/usr/local/sbin/edison-pinmux
+ExecStart=/usr/sbin/edison-pinmux
 StandardInput=socket
 StandardOutput=socket
 StandardError=journal

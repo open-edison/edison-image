@@ -4,4 +4,4 @@ RequiresMountsFor=/var/lib/edison
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/edison-config save
+ExecStart=/usr/sbin/edison-config save

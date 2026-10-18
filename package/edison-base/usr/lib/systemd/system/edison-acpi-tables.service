@@ -8,7 +8,7 @@ Before=systemd-udev-trigger.service sysinit.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/sbin/edison-acpi-tables
+ExecStart=/usr/sbin/edison-acpi-tables
 
 [Install]
 WantedBy=sysinit.target

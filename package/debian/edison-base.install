@@ -1,0 +1,3 @@
+edison-base/etc /
+edison-base/usr /
+build/acpi/*.aml /usr/lib/edison/acpi/

@@ -1,0 +1,37 @@
+Source: edison-image
+Section: misc
+Priority: optional
+Maintainer: open-edison <open-edison@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Homepage: https://github.com/open-edison/edison-image
+Rules-Requires-Root: no
+
+Package: edison-base
+Architecture: all
+Depends: ${misc:Depends}, libubootenv-tool, e2fsprogs, kmod, passwd, gpiod
+Recommends: edison-firmware, linux-image-edison, bluez, apparmor
+Description: Intel Edison (Kit for Arduino) system integration
+ Services, tools and configuration for Debian on the Intel Edison: the
+ Arduino kit's ACPI overlays and pin muxing, USB gadget networking and
+ serial, settings that survive reflashing, the Arduino sketch service,
+ the open-edison apt repository, and installing new kernels on the boot
+ partition.
+
+Package: edison-firmware
+Architecture: all
+Section: non-free-firmware/kernel
+Depends: ${misc:Depends}, firmware-brcm80211
+Description: Broadcom WiFi NVRAM and Bluetooth patch for the Intel Edison
+ The Edison's calibration (NVRAM) file for its BCM43340 WiFi and the
+ BCM43341B0 Bluetooth patch, from Intel's edison-firmware repository,
+ redistributed unmodified under the Broadcom licence. Debian's
+ firmware-brcm80211 provides the WiFi firmware itself.
+
+Package: linux-image-edison
+Architecture: amd64
+Section: kernel
+Depends: ${misc:Depends}, linux-image-${kernel:Release} (= ${kernel:Version})
+Description: Linux kernel for the Intel Edison (meta package)
+ Depends on the current kernel for the Edison, so that upgrading this
+ package installs new kernel versions.

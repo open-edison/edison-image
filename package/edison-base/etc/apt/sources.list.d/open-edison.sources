@@ -1,0 +1,7 @@
+# open-edison's packages: the Edison kernel (linux-image-edison), edison-base and
+# edison-firmware, published with each edison-image release.
+Types: deb
+URIs: https://open-edison.github.io/edison-image/
+Suites: trixie
+Components: main
+Signed-By: /usr/share/keyrings/open-edison-archive-keyring.asc

@@ -79,6 +79,32 @@ U-Boot.
 - **Reflash later** with `sudo edison-dfu` on the board, then `uv run flash.py --only
   rootfs` on the computer (or the full flash for a new U-Boot or environment).
 
+## Updates
+
+The kernel and the Edison-specific parts of the image are Debian packages too, from the
+[open-edison apt repository](https://open-edison.github.io/edison-image/) (signed; the
+image has its source and key). So one command updates everything:
+
+```
+sudo apt update && sudo apt full-upgrade
+```
+
+then `sudo reboot` when a new kernel or `edison-base` was installed (services aren't
+restarted during an upgrade, so as not to cut off a session over USB networking).
+
+| Package | Contents |
+|---|---|
+| `linux-image-edison` | Depends on the current kernel, `linux-image-<version>-edison` |
+| `edison-base` | The Edison's services, tools (`edison-config`, `edison-dfu`, `edison-apparmor`, ...), udev rules, network config, ACPI overlays |
+| `edison-firmware` | The board's WiFi calibration and Bluetooth patch |
+
+A new kernel is copied to the boot partition (mounted at `/boot/firmware`), and the one it
+replaces is kept as `vmlinuz.prev`, which U-Boot boots if `vmlinuz` can't be read. If a new
+kernel fails to boot, flash a release's kernel back with `uv run flash.py --only boot` (U-Boot
+always opens a DFU window at power-on). U-Boot and its environment don't update through apt:
+those need a full flash. Boards flashed with v0.2.8 or earlier need one full flash with
+v0.2.9 or later to get the repository.
+
 ## What survives a reflash
 
 The eMMC has one large root filesystem (with `/home`) plus a small `config` partition,

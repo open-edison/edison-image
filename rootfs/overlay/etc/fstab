@@ -7,5 +7,8 @@ PARTLABEL=config   /var/lib/edison  ext4  defaults,noatime,nofail,x-systemd.requ
 # Bluetooth pairings and the uploaded Arduino sketch live on the config partition.
 /var/lib/edison/bluetooth  /var/lib/bluetooth  none  bind,nofail,x-systemd.requires=edison-config-dirs.service  0  0
 /var/lib/edison/sketch  /var/lib/edison-sketch  none  bind,nofail,x-systemd.requires=edison-config-dirs.service  0  0
+# The kernel U-Boot loads (vmlinuz, and vmlinuz.prev as its fallback), kept up to date by
+# edison-base's kernel hook when a linux-image package is installed.
+PARTLABEL=boot     /boot/firmware   vfat  defaults,noatime,nofail,umask=0022  0  0
 # Per-board data from Intel's factory (bluetooth_address, serial_number). Read-only.
 PARTLABEL=factory  /factory         ext4  ro,nofail,nosuid,nodev,noexec  0  0

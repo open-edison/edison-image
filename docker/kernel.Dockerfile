@@ -10,6 +10,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ca-certificates curl xz-utils patch \
       gcc make bc bison flex libssl-dev libelf-dev cpio kmod python3 \
+      build-essential dpkg-dev debhelper rsync libdw-dev \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -28,16 +29,25 @@ RUN scripts/kconfig/merge_config.sh -m arch/x86/configs/x86_64_defconfig \
  && make olddefconfig \
  && sh /config/check-config.sh .config /config/required.txt
 
-RUN make -j"$(nproc)" bzImage modules \
- && make INSTALL_MOD_PATH=/out/modules INSTALL_MOD_STRIP=1 modules_install \
- && rm -f /out/modules/lib/modules/*/build \
+RUN make -j"$(nproc)" bzImage modules
+
+# The kernel's own Debian packaging (linux-image-<release>: /boot/vmlinuz-<release>, its
+# config and System.map, /lib/modules), in a separate step so that a new package version
+# reuses the compiled tree. No headers package; the linux-libc-dev it always builds is
+# dropped, as Debian's own version belongs on the board.
+ARG KDEB_PKGVERSION=0~local
+RUN DEB_BUILD_PROFILES=pkg.linux-upstream.nokernelheaders \
+    DEBFULLNAME=open-edison DEBEMAIL=open-edison@users.noreply.github.com \
+    make -j"$(nproc)" bindeb-pkg KDEB_PKGVERSION="${KDEB_PKGVERSION}" KDEB_CHANGELOG_DIST=trixie \
+ && mkdir -p /out \
+ && mv /linux-image-*.deb /out/ \
+ && rm -f /out/linux-image-*-dbg_*.deb \
  && cp arch/x86/boot/bzImage /out/vmlinuz \
  && cp .config /out/config \
  && cp System.map /out/System.map \
  && make -s kernelrelease > /out/RELEASE \
- && tar -C /out/modules -czf /out/modules.tar.gz lib \
- && rm -rf /out/modules \
- && cd /out && sha256sum vmlinuz modules.tar.gz > SHA256SUMS
+ && echo "${KDEB_PKGVERSION}" > /out/PKGVERSION \
+ && cd /out && sha256sum vmlinuz linux-image-*.deb > SHA256SUMS
 
 FROM scratch
 COPY --from=build /out/ /

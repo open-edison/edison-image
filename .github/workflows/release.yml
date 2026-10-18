@@ -52,6 +52,10 @@ jobs:
           The first flash of this image is a clean slate: it replaces U-Boot and rewrites the
           partition table. Later flashes keep your settings.
 
+          **Update without reflashing:** the kernel and the Edison packages (\`.deb\` files
+          below) are also in the [apt repository](https://open-edison.github.io/edison-image/),
+          which boards running v0.2.9 or later use: \`sudo apt update && sudo apt upgrade\`.
+
           \`packages.manifest\` lists every Debian package and version in the image;
           \`kernel.config\` is the kernel configuration (corresponding source: see the README).
           EOF
@@ -69,3 +73,49 @@ jobs:
             --notes-file notes.md \
             --generate-notes \
             $prerelease
+
+  # The apt repository on GitHub Pages: the packages of the newest few releases (so the
+  # previous kernel stays installable), indexed and signed. Pre-releases aren't published.
+  apt:
+    needs: release
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-24.04
+    environment: release # the signing key; only v* tags may use it
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Collect packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p site/pool/main
+          gh release list --exclude-drafts --exclude-pre-releases --limit 3 --json tagName --jq '.[].tagName' |
+            while read -r tag; do
+              gh release download "$tag" --pattern '*.deb' --dir site/pool/main --skip-existing || true
+            done
+          ls -l site/pool/main
+
+      - name: Index and sign
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+          APT_SIGNING_PASSPHRASE: ${{ secrets.APT_SIGNING_PASSPHRASE }}
+        run: |
+          command -v apt-ftparchive >/dev/null || sudo apt-get install -y apt-utils
+          scripts/apt-repo.sh site
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  pages:
+    needs: apt
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
