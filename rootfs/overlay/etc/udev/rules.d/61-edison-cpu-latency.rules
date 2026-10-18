@@ -1,0 +1,4 @@
+# Let members of the gpio group ask for low CPU wakeup latency (/dev/cpu_dma_latency), as
+# Arduino sketches' pulseIn() does while it waits: GPIO edge timestamps come from the
+# interrupt handler, late by however long a CPU takes to leave a deep idle state.
+KERNEL=="cpu_dma_latency", GROUP="gpio", MODE="0660"
