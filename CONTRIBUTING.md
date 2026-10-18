@@ -89,6 +89,6 @@ shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh rootfs/ove
   their exact tag instead (`astral-sh/setup-uv@v10.3.0`). Dependabot opens one grouped pull
   request a month with updates.
 - **Hardware changes need a hardware test.** Note what you tested on a real board in the
-  pull request; findings go in
-  [edison-docs](https://github.com/open-edison/edison-docs).
+  pull request, with anything you found that users should know (it belongs in the README or
+  the docs).
 - **Flashing:** enter DFU with `sudo reboot`, not the reset button (see the README's Notes).

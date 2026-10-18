@@ -105,7 +105,9 @@ update installed software with `apt` rather than by reflashing.
 ## Notes
 
 See **[docs/hardware.md](docs/hardware.md)** for what the board's connectors, switch,
-buttons, jumpers and LEDs do, and its known quirks.
+buttons, jumpers and LEDs do, and its known quirks, and
+**[docs/troubleshooting.md](docs/troubleshooting.md)** to tell what state a board is in and
+for common problems.
 
 - **Use `sudo edison-dfu` or `sudo reboot`, not the reset button:** an abrupt reset while
   Linux is running (the reset button, and presumably a watchdog reset) can leave the kit's
@@ -117,8 +119,9 @@ buttons, jumpers and LEDs do, and its known quirks.
 - **Clock:** there's no battery-backed time source, so the board boots with a stale clock
   until `systemd-timesyncd` syncs over the network. `apt update` fails ("Not live until")
   until then.
-- **SPI on the header** (IO10–IO13) is off by default, so those pins work as GPIO for
-  sketches. See `acpi/README.md` to switch.
+- **SPI on the header** (IO11–IO13) is switched on by a sketch's `SPI.begin()`; until then
+  those pins work as GPIO. Kernel drivers for SPI devices need an ACPI overlay: see
+  `acpi/README.md`.
 - **Security modules:** the kernel has no active LSM policy. SELinux is disabled (Debian
   ships no policy and doesn't use it by default). Stock Debian uses AppArmor; we don't
   enable it yet. Planned approach, one image rather than two variants: build AppArmor into

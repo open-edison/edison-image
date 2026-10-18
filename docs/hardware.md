@@ -48,7 +48,7 @@ than pressing reset; U-Boot opens a short DFU window on every boot.
 
 | Ref | Sets | Positions |
 |---|---|---|
-| **J9** | **IOREF**: the voltage the header's level shifters use, and the IOREF pin | **Pins 1-2: 5 V** (as shipped). Pins 2-3: 3.3 V, for 3.3 V shields. |
+| **J9** | **IOREF**: the voltage the header's level shifters use, and the IOREF pin | **Pins 1-2: 5 V** (as shipped). Pins 2-3: 3.3 V, for 3.3 V shields and modules: many small displays (ST7735 TFTs, for one) and sensors take only 3.3 V logic. |
 | **J8** | Analog reference for A0–A5 | **Pins 1-2: IOREF** (as shipped), so A0–A5 read 0–5 V, or 0–3.3 V with J9 at 3.3 V. Pins 2-3: the external AREF pin. |
 | **J11, J12** | Which header pins get the module's four PWM outputs (the "PWM swizzler") | Default (J12 1-2, J12 3-4, J11 1-2, J11 3-4): PWM on IO3, IO5, IO6 and IO9. See below. |
 | **J13** | The battery charger's thermistor (NTC) input | **Pins 2-3: grounded** (as shipped), which turns off the charger's battery-temperature check. Pins 1-2: the input goes to pin 1, for a battery pack's own thermistor. Leave it on 2-3 unless your battery has one. |
@@ -98,8 +98,13 @@ Intel's drawing of where they are: Figure 5 on
 - **In edison-image** (fixed by the ACPI tables it loads at boot):
   - IO0/IO1 are UART1 and A4/A5 are I2C-6 (`Serial1` and `Wire`), so those pins can't be
     plain GPIO.
-  - SPI on IO10–IO13 is off by default, so those pins, including IO13 and DS2, work as GPIO.
-    See [acpi/README.md](../acpi/README.md) to switch.
+  - SPI5 reaches the header on IO11–IO13 (MOSI, MISO, SCK) when a sketch's `SPI.begin()`
+    switches those pins to it; otherwise they, including IO13 and DS2, work as GPIO.
+    Sketches use it through `/dev/spidev5.1` (from v0.2.6). It works to 10 MHz; 25 MHz, the
+    controller's maximum, doesn't get through the level shifters intact. edison-image runs
+    SPI5 without DMA (a hang was once blamed on its DMA); long transfers reach ~420 KB/s,
+    and each transfer costs ~100 µs in the kernel, so libraries that send a byte at a time
+    are slow.
 
 ## Quirks
 
@@ -135,6 +140,20 @@ Intel's drawing of where they are: Figure 5 on
   timeout and can't change the timeout once running. edison-image sets systemd's runtime
   and reboot watchdog timeouts both to 60 s; shorter or unequal values can panic the board,
   especially during shutdown.
+
+## GPIO timing
+
+- **Edge timestamps are only as prompt as the CPU.** Linux timestamps a GPIO edge when it
+  handles the interrupt, not in hardware. When the CPUs are in a deep idle state (exit
+  latency 140 µs for C6, 1.2 ms for C7), that can be up to a millisecond late, varying, and
+  an edge can be lost if another comes before the first is handled. Measured on an exact
+  1 kHz square wave: half periods of 313–662 µs, against 487–512 µs with deep idle held off.
+  edison-image (from v0.2.7) lets sketches hold it off (`/dev/cpu_dma_latency` for the
+  `gpio` group); arduino-core-edison's `pulseIn()` does while it waits. Interrupt handlers
+  (`attachInterrupt()`) can likewise run up to about a millisecond after the edge.
+- **Pulses shorter than about 50 µs are misread** when both edges are watched: the GPIO
+  controller doesn't say which way an edge went, so Linux reads the pin when it handles the
+  edge, and a short pulse has already ended by then. 50 µs and longer measured correctly.
 
 ## Sources
 
