@@ -66,7 +66,8 @@ SW1 is towards the micro-USB ports.
 | Symptom | Cause and fix |
 |---|---|
 | Nothing appears on USB or the console | Charge-only or loose cable (swap J3 and J16 cables), SW1 in host mode, or no power. See above. |
-| An unknown device, or "error -32" in the host's log, for a few seconds at power-on | U-Boot's 3-second DFU window. Harmless. |
+| An unknown device, or "error -32" in the host's log, for a few seconds at power-on | U-Boot's DFU window (5 seconds with edison-image, 3 right after recovery). Harmless. |
+| `8250_mid 0000:00:04.0: probe with driver 8250_mid failed with error -16` at every boot | Harmless. PCI function 04.0 isn't a UART but the UARTs' shared register block, with the same PCI ID; the kernel refuses it on purpose (it has a bogus IRQ 0). The three UARTs (ttyS0–ttyS2) are unaffected. |
 | `flash.py` finds no DFU device, or misses the window | See your flashing guide's troubleshooting. `sudo edison-dfu` on a running board holds DFU mode open. |
 | Windows: the DFU device has no driver | Install WinUSB for it with Zadig: [flashing-windows.md](flashing-windows.md), step 4. |
 | Many header pins don't work; `edison-acpi-tables.service` failed with "TRI_STATE_ALL not found" | The reset button was pressed while Linux ran, which leaves an I/O expander unresponsive. Unplug all power (DC and both USB cables) and reconnect. Use `sudo reboot` instead of the button. |
@@ -76,6 +77,6 @@ SW1 is towards the micro-USB ports.
 | `apt update` fails with "Not live until …" | The board has no battery-backed clock. Wait for it to sync over the network. |
 | Can't find the board's address | Over USB it's always `192.168.2.15`. On WiFi, use `edison.local`. |
 | An Arduino sketch's pin does nothing | Check the sketch's log: `journalctl -u edison-sketch`. IO0/IO1 (UART1) and A4/A5 (I2C) are reserved, and say so there. |
-| An Arduino upload asks for a password | Only the first upload from each computer needs it: see [arduino-core-edison](https://github.com/open-edison/arduino-core-edison#uploading). |
+| An Arduino upload asks for a password | Only the first upload from each computer, and the first after a reflash, needs it: see [arduino-core-edison](https://github.com/open-edison/arduino-core-edison#uploading). |
 | `pulseIn()` or interrupt timings are off | See [GPIO timing](hardware.md#gpio-timing). |
 | The board resets during shutdown, or panics with "Kernel Watchdog" | Watchdog settings changed from edison-image's: see [hardware.md](hardware.md#quirks). |

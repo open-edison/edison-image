@@ -116,7 +116,7 @@ Intel's drawing of where they are: Figure 5 on
   using `sudo reboot`, `sudo poweroff`, `sudo edison-dfu` or a short press of PWR. A
   watchdog reset is probably
   just as abrupt.
-- **A brief unknown or DFU device at every power-on.** U-Boot opens a 3-second DFU window
+- **A brief unknown or DFU device at every power-on.** U-Boot opens a 5-second DFU window
   (`8087:0a99`) on each boot, before Linux brings up the network and serial ports. Hosts may
   show an unrecognised device, or log a failed enumeration ("error -32"), for those seconds.
   Both are harmless.
