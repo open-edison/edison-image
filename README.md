@@ -97,7 +97,7 @@ restarted during an upgrade, so as not to cut off a session over USB networking)
 | `edison-firmware` | The board's WiFi calibration and Bluetooth patch |
 
 U-Boot and its environment don't update through apt: those need a full flash. Boards
-flashed with v0.2.8 or earlier need one full flash with v0.2.9 or later.
+flashed with v0.2.8 or earlier need one full flash with v0.3.0 or later.
 
 ## Booting and the kernel command line
 

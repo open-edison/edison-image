@@ -55,7 +55,7 @@ jobs:
 
           **Update without reflashing:** the kernel and the Edison packages (\`.deb\` files
           below) are also in the [apt repository](https://open-edison.github.io/edison-image/),
-          which boards running v0.2.9 or later use: \`sudo apt update && sudo apt upgrade\`.
+          which boards running v0.3.0 or later use: \`sudo apt update && sudo apt upgrade\`.
 
           \`packages.manifest\` lists every Debian package and version in the image;
           \`kernel.config\` is the kernel configuration (corresponding source: see the README).

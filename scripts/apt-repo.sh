@@ -56,7 +56,7 @@ cat > "$site/index.html" <<'EOF'
 <h1>open-edison apt repository</h1>
 <p>Packages for <a href="https://github.com/open-edison/edison-image">edison-image</a>
 (Debian 13 for the Intel Edison): the kernel, <code>edison-base</code> and
-<code>edison-firmware</code>. Boards running edison-image v0.2.9 or later use it already:
+<code>edison-firmware</code>. Boards running edison-image v0.3.0 or later use it already:
 <code>sudo apt update && sudo apt upgrade</code>.</p>
 <p>Signing key: <a href="open-edison-archive-keyring.asc">open-edison-archive-keyring.asc</a>
 (CB6D 240E 6E5A AC30 4DAB  B75D 1820 C349 479D 6749).</p>
