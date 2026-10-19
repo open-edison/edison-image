@@ -66,7 +66,7 @@ SW1 is towards the micro-USB ports.
 | Symptom | Cause and fix |
 |---|---|
 | Nothing appears on USB or the console | Charge-only or loose cable (swap J3 and J16 cables), SW1 in host mode, or no power. See above. |
-| An unknown device, or "error -32" in the host's log, for a few seconds at power-on | U-Boot's DFU window (5 seconds with edison-image, 3 right after recovery). Harmless. |
+| An unknown device, or "error -32" in the host's log, for a few seconds at power-on | U-Boot's 3-second DFU window. Harmless. |
 | `8250_mid 0000:00:04.0: probe with driver 8250_mid failed with error -16` at every boot | Harmless. PCI function 04.0 isn't a UART but the UARTs' shared register block, with the same PCI ID; the kernel refuses it on purpose (it has a bogus IRQ 0). The three UARTs (ttyS0–ttyS2) are unaffected. |
 | `flash.py` finds no DFU device, or misses the window | See your flashing guide's troubleshooting. `sudo edison-dfu` on a running board holds DFU mode open. |
 | Windows: the DFU device has no driver | Install WinUSB for it with Zadig: [flashing-windows.md](flashing-windows.md), step 4. |
