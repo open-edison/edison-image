@@ -37,7 +37,7 @@ Ubuntu add desktop users by default). Without the rule, dfu-util fails with
 Download every file from the latest
 [release](https://github.com/open-edison/edison-image/releases) into one folder (or
 extract a CI build artifact). The folder should contain `flash.py`, `SHA256SUMS`,
-`u-boot.bin`, `u-boot-env.bin`, `boot.vfat` and `rootfs.ext4.xz`.
+`u-boot.bin`, `u-boot-env.bin` and `rootfs.ext4.xz`.
 
 ## 3. Connect the board
 
@@ -70,12 +70,9 @@ Don't use the reset button while Linux is running (see the README's Notes).
 
 The first flash of this image takes about 3 minutes and has two stages: U-Boot and its
 environment first, then the board resets (and on the first flash rewrites its partition
-table and resets again), then the kernel and rootfs. **This first flash erases the old
-system completely.** Later flashes keep your settings; to update only the system:
-
-```
-uv run flash.py --only rootfs
-```
+table and resets again), then the rootfs (which holds the kernel). **It erases the old
+system completely**, as does every reflash: afterwards, update the board with `apt` (see
+the README) rather than by reflashing.
 
 ## 5. First boot
 

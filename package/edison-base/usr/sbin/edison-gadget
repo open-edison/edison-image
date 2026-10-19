@@ -44,8 +44,8 @@ echo 0x02 > bDeviceSubClass
 echo 0x01 > bDeviceProtocol
 
 # Stable per-board MAC addresses and serial number (locally administered, unicast),
-# derived from the factory serial number so they survive reflashing; the machine ID (new
-# with every flash) is only a fallback.
+# derived from the factory serial number so they stay the same across reflashes; the machine
+# ID (new with every flash) is only a fallback.
 if [ -s /factory/serial_number ]; then
     id_source=/factory/serial_number
 else

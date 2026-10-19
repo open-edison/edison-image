@@ -50,7 +50,8 @@ jobs:
           - [Windows](https://github.com/open-edison/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-windows.md)
 
           The first flash of this image is a clean slate: it replaces U-Boot and rewrites the
-          partition table. Later flashes keep your settings.
+          partition table. Update a running board with apt rather than by reflashing: a reflash is a
+          clean reinstall.
 
           **Update without reflashing:** the kernel and the Edison packages (\`.deb\` files
           below) are also in the [apt repository](https://open-edison.github.io/edison-image/),

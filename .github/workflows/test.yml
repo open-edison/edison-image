@@ -53,4 +53,4 @@ jobs:
           shellcheck --version
           shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh \
             package/build-debs.sh package/edison-base/usr/sbin/* \
-            package/edison-base/etc/kernel/postinst.d/* package/debian/*.postinst
+            package/edison-base/usr/share/u-boot-menu/conf.d/*.conf package/debian/*.postinst

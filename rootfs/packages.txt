@@ -11,7 +11,7 @@ kmod
 # Not Essential in trixie: needed for fsck of the ext4 partitions and to format config.
 e2fsprogs
 # Time zones (timedatectl set-timezone) and locales beyond C.UTF-8 (dpkg-reconfigure
-# locales). The image defaults to UTC and C.UTF-8; choices persist on the config partition.
+# locales). The image defaults to UTC and C.UTF-8.
 tzdata
 locales
 # fw_setenv (in libubootenv-tool since trixie, not u-boot-tools): edison-dfu asks U-Boot
@@ -27,8 +27,7 @@ netbase
 ca-certificates
 openssh-server
 sudo
-# AppArmor's tools and Debian's profiles: inactive (the service is conditional on it) unless
-# AppArmor is enabled on the kernel command line with edison-apparmor.
+# AppArmor's tools and Debian's profiles (the kernel enables AppArmor by default).
 apparmor
 avahi-daemon
 libnss-mdns

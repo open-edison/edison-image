@@ -9,14 +9,13 @@ Rules-Requires-Root: no
 
 Package: edison-base
 Architecture: all
-Depends: ${misc:Depends}, libubootenv-tool, e2fsprogs, kmod, passwd, gpiod
+Depends: ${misc:Depends}, libubootenv-tool, kmod, passwd, gpiod, u-boot-menu
 Recommends: edison-firmware, linux-image-edison, bluez, apparmor
 Description: Intel Edison (Kit for Arduino) system integration
  Services, tools and configuration for Debian on the Intel Edison: the
  Arduino kit's ACPI overlays and pin muxing, USB gadget networking and
- serial, settings that survive reflashing, the Arduino sketch service,
- the open-edison apt repository, and installing new kernels on the boot
- partition.
+ serial, the Arduino sketch service, the open-edison apt repository, and
+ the board's kernel command line defaults for u-boot-menu.
 
 Package: edison-firmware
 Architecture: all

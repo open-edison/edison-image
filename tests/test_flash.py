@@ -66,7 +66,6 @@ class FileTests(unittest.TestCase):
 
     def make_images(self, compressed=False, with_uboot=True):
         files = {
-            "boot.vfat": b"B" * 3000,
             "u-boot-env.bin": b"E" * 1024,
         }
         rootfs = b"R" * 20000
@@ -88,7 +87,7 @@ class FileTests(unittest.TestCase):
 
     def test_checksum_mismatch_fails(self):
         self.make_images()
-        write(self.images / "boot.vfat", b"tampered")
+        write(self.images / "u-boot-env.bin", b"tampered")
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             flash.verify_checksums(self.images)
 
@@ -96,7 +95,7 @@ class FileTests(unittest.TestCase):
         self.make_images()
         plan = flash.build_plan(self.images, None, None, self.work)
         self.assertEqual(
-            [alt for alt, _ in plan], ["u-boot0", "u-boot-env0", "u-boot-env1", "boot", "rootfs"]
+            [alt for alt, _ in plan], ["u-boot0", "u-boot-env0", "u-boot-env1", "rootfs"]
         )
         self.assertEqual(plan[0][1], self.images / "u-boot.bin")
 
@@ -122,7 +121,7 @@ class FileTests(unittest.TestCase):
 
     def test_plan_missing_file_fails(self):
         self.make_images()
-        (self.images / "boot.vfat").unlink()
+        (self.images / "u-boot-env.bin").unlink()
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             flash.build_plan(self.images, None, None, self.work)
 
@@ -135,7 +134,7 @@ class FlashTests(unittest.TestCase):
         self.log = self.tmp / "dfu.log"
         self.plan = [
             ("u-boot0", write(self.tmp / "u-boot.bin", b"U" * 5000)),
-            ("boot", write(self.tmp / "boot.vfat", b"B" * 7000)),
+            ("u-boot-env0", write(self.tmp / "u-boot-env.bin", b"E" * 7000)),
             ("rootfs", write(self.tmp / "rootfs.ext4", b"R" * 9000)),
         ]
         self.saved_dfu = flash.DFU_UTIL
@@ -217,7 +216,7 @@ class FlashTests(unittest.TestCase):
         self.addCleanup(setattr, flash, "wait_for_device", original)
         with self.assertRaises(flash.Interrupted) as cm:
             self.run_flash()
-        self.assertEqual(cm.exception.args, ("u-boot0",))
+        self.assertEqual(cm.exception.args, ("u-boot-env0",))
 
     def test_interrupt_explanations_fit_80_columns(self):
         for alt in (None, "u-boot0", "rootfs"):
@@ -227,18 +226,20 @@ class FlashTests(unittest.TestCase):
             for line in out.getvalue().splitlines():
                 self.assertLessEqual(len(line), 80, line)
 
-    def test_phases_split_u_boot_from_the_rest(self):
+    def test_phases_split_after_the_environment(self):
         alts = [[alt for alt, _ in ph] for ph in flash.phases(self.plan)]
-        self.assertEqual(alts, [["u-boot0"], ["boot", "rootfs"]])
-        self.assertEqual(len(flash.phases(self.plan[1:])), 1)  # --only boot rootfs
+        self.assertEqual(alts, [["u-boot0", "u-boot-env0"], ["rootfs"]])
+        self.assertEqual(len(flash.phases(self.plan[2:])), 1)  # --only rootfs
         self.assertEqual(len(flash.phases(self.plan[:1])), 1)  # --only u-boot0
 
     def test_flashes_every_partition_resetting_after_each_phase(self):
         output = self.run_flash()
         calls = self.calls()
-        self.assertEqual([c[c.index("-a") + 1] for c in calls], ["u-boot0", "boot", "rootfs"])
-        # Reset after U-Boot (to apply the new layout) and after the last partition.
-        self.assertEqual(["-R" in c for c in calls], [True, False, True])
+        self.assertEqual(
+            [c[c.index("-a") + 1] for c in calls], ["u-boot0", "u-boot-env0", "rootfs"]
+        )
+        # Reset after the environment (to apply the new layout) and after the last partition.
+        self.assertEqual(["-R" in c for c in calls], [False, True, True])
         self.assertIn("Waiting for the board to come back", output)
         self.assertIn("rootfs      done", output)
         self.assertIn("overall 100%", output)
@@ -265,7 +266,7 @@ class FlashTests(unittest.TestCase):
         self.run_flash()
 
     def test_failed_download_stops(self):
-        os.environ["FAKE_DFU_FAIL"] = "boot"
+        os.environ["FAKE_DFU_FAIL"] = "u-boot-env0"
         with self.assertRaises(SystemExit):
             self.run_flash()
         self.assertEqual(len(self.calls()), 2)  # never reached rootfs

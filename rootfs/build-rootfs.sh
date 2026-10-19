@@ -2,7 +2,7 @@
 # Build our packages, the Debian rootfs and the flashable images. Runs inside the tooling
 # container (docker/rootfs.Dockerfile) as root, with:
 #   /src         this repo (read-only)
-#   /in/kernel   kernel build output (linux-image-*.deb, vmlinuz, RELEASE, PKGVERSION)
+#   /in/kernel   kernel build output (linux-image-*.deb, RELEASE, PKGVERSION)
 #   /out         output directory
 #   /cache       optional: .deb cache kept between builds (only changed packages download)
 # and DEB_VERSION (our packages' version), IMAGE_VERSION and IMAGE_COMMIT set.
@@ -55,14 +55,16 @@ mmdebstrap \
     --customize-hook='sync-out /var/cache/apt/archives /cache/apt' \
     --customize-hook='rm -rf "$1/work"' \
     --customize-hook='cp -r --no-preserve=mode,ownership /src/rootfs/overlay/. "$1/"' \
+    --customize-hook='chmod 0600 "$1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"' \
+    --customize-hook='chroot "$1" u-boot-update' \
+    --customize-hook='grep -q "linux /boot/vmlinuz-" "$1/boot/extlinux/extlinux.conf" && grep -q "append root=PARTLABEL=rootfs ro " "$1/boot/extlinux/extlinux.conf" || { echo "bad extlinux.conf:" >&2; cat "$1/boot/extlinux/extlinux.conf" >&2; exit 1; }' \
     --customize-hook='test -e "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.bin" || { echo "firmware-brcm80211 lacks brcmfmac43340-sdio.bin" >&2; exit 1; }' \
     --customize-hook="test -f \"\$1/boot/vmlinuz-$release\" && test -d \"\$1/lib/modules/$release/kernel\"" \
     --customize-hook="install -d -m 0755 -o 1000 -g 1000 \"\$1/var/lib/edison-sketch\"" \
     --customize-hook='install -m 0644 /work/edison-image-release "$1/etc/edison-image-release"' \
     --customize-hook='. /work/edison-image-release; printf "\nopen-edison edison-image %s (kernel %s)\n%s\n\n" "$VERSION" "$KERNEL" "$URL" > "$1/etc/motd"' \
-    --customize-hook='ln -sf /var/lib/edison/wifi/wpa_supplicant-wlan0.conf "$1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"' \
-    --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect /usr/sbin/mkfs.ext4 /usr/sbin/e2fsck /usr/bin/script /usr/bin/fw_setenv /usr/sbin/apparmor_parser /usr/sbin/edison-config; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
-    --customize-hook='for u in edison-acpi-tables edison-gadget edison-config-restore edison-sketch.path edison-pinmux.socket; do chroot "$1" systemctl is-enabled -q $u || { echo "$u not enabled by edison-base" >&2; exit 1; }; done' \
+    --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect /usr/sbin/e2fsck /usr/bin/script /usr/bin/fw_setenv /usr/sbin/apparmor_parser /usr/sbin/u-boot-update /usr/sbin/edison-gadget; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
+    --customize-hook='for u in edison-acpi-tables edison-gadget edison-sketch.path edison-pinmux.socket; do chroot "$1" systemctl is-enabled -q $u || { echo "$u not enabled by edison-base" >&2; exit 1; }; done' \
     --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd wpa_supplicant@wlan0' \
     --customize-hook="chroot \"\$1\" useradd -m -s /bin/bash -G sudo,netdev,plugdev,dialout,gpio,i2c $USER_NAME" \
     --customize-hook='find "$1/etc/systemd" "$1/etc/udev/rules.d" "$1/usr/lib/systemd/system" "$1/usr/lib/udev/rules.d" -type f -perm /022 -print -exec false {} + >&2 || { echo "group/world-writable config files in rootfs" >&2; exit 1; }' \
@@ -87,12 +89,6 @@ fi
 rm -f /out/rootfs.ext4
 mke2fs -q -t ext4 -L rootfs -d "$ROOT" /out/rootfs.ext4 "${size_kib}k"
 
-# FAT boot partition (64 MiB) with the kernel; later kernels come from the linux-image
-# packages (edison-base's kernel hook copies them here).
-rm -f /out/boot.vfat
-mkfs.vfat -n BOOT -C /out/boot.vfat 65536 >/dev/null
-mcopy -i /out/boot.vfat /in/kernel/vmlinuz ::vmlinuz
-
 # Redundant U-Boot environment (comments and blank lines stripped first).
 grep -v -e '^#' -e '^$' /src/uboot/env.txt > /work/env.txt
 mkenvimage -r -s 0x10000 -o /out/u-boot-env.bin /work/env.txt
@@ -100,7 +96,7 @@ mkenvimage -r -s 0x10000 -o /out/u-boot-env.bin /work/env.txt
 cp /in/kernel/RELEASE /out/KERNEL_RELEASE
 cp /work/edison-image-release /out/edison-image-release
 cd /out
-sha256sum rootfs.ext4 boot.vfat u-boot-env.bin > SHA256SUMS
-chmod 0644 rootfs.ext4 boot.vfat u-boot-env.bin KERNEL_RELEASE SHA256SUMS packages.manifest \
+sha256sum rootfs.ext4 u-boot-env.bin > SHA256SUMS
+chmod 0644 rootfs.ext4 u-boot-env.bin KERNEL_RELEASE SHA256SUMS packages.manifest \
     edison-image-release
 echo "rootfs: ${used_kib} KiB used, image $(( size_kib / 1024 )) MiB; kernel ${release}"

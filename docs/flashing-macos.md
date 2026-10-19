@@ -16,7 +16,7 @@ USB driver for DFU mode.
 Download every file from the latest
 [release](https://github.com/open-edison/edison-image/releases) into one folder (or
 extract a CI build artifact). The folder should contain `flash.py`, `SHA256SUMS`,
-`u-boot.bin`, `u-boot-env.bin`, `boot.vfat` and `rootfs.ext4.xz`.
+`u-boot.bin`, `u-boot-env.bin` and `rootfs.ext4.xz`.
 
 ## 3. Connect the board
 
@@ -53,8 +53,8 @@ Don't use the reset button while Linux is running (see the README's Notes).
 
 A flash takes about 2½ minutes (tested on a Mac: 2:22), in two stages with a reset (or two)
 in between.
-**It erases the old system completely.** Later flashes keep your settings; to update only
-the system: `uv run flash.py --only rootfs`.
+**It erases the old system completely**, as does every reflash: afterwards, update the board
+with `apt` (see the README) rather than by reflashing.
 
 ## 5. First boot
 

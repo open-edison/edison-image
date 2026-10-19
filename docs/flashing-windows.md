@@ -29,7 +29,7 @@ mode, installed once with Zadig.
 Download every file from the latest
 [release](https://github.com/open-edison/edison-image/releases) into one folder (or
 extract a CI build artifact). The folder should contain `flash.py`, `SHA256SUMS`,
-`u-boot.bin`, `u-boot-env.bin`, `boot.vfat` and `rootfs.ext4.xz`.
+`u-boot.bin`, `u-boot-env.bin` and `rootfs.ext4.xz`.
 
 ## 3. Connect the board
 
@@ -50,7 +50,7 @@ Zadig can only install the driver while the board is in DFU mode, so hold it the
   `run do_dfu` on open-edison U-Boot, or `run do_force_flash_os` on vendor U-Boot.
 
 Then in Zadig (`dfu-util -l` afterwards should list the board's partitions: `u-boot0`,
-`boot`, `rootfs` and so on):
+`config`, `rootfs` and so on):
 
 1. *Options* → **List All Devices**.
 2. Select **USB download gadget** (USB ID `8087 0A99`).
@@ -76,8 +76,8 @@ Don't use the reset button while Linux is running (see the README's Notes).
 
 A flash takes about 2½ minutes (tested on Windows 11: 2:40), in two stages with a reset (or
 two) in between.
-**It erases the old system completely.** Later flashes keep your settings; to update only
-the system: `uv run flash.py --only rootfs`.
+**It erases the old system completely**, as does every reflash: afterwards, update the board
+with `apt` (see the README) rather than by reflashing.
 
 ## 6. First boot
 

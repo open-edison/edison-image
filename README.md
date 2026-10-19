@@ -23,8 +23,8 @@ Bluetooth, I2C, GPIO) on a real board. Flashing is tested from Linux, macOS and 
 - The Arduino kit's I/O: expanders, level shifters and muxing described by ACPI overlays,
   with UART1 on IO0/IO1 and I2C-6 on SDA/SCL. The other header pins, including IO13 and
   its DS2 LED, are left for sketches to drive.
-- **Settings that survive reflashing** (see below), and almost the whole eMMC (~3.5 GiB)
-  for the root filesystem.
+- **Updates with pt**, the kernel included (see below), and almost the whole eMMC
+  (~3.6 GiB) for the root filesystem.
 
 ## Get an image
 
@@ -35,7 +35,7 @@ Bluetooth, I2C, GPIO) on a real board. Flashing is tested from Linux, macOS and 
   and download its `edison-image-*` artifact (kept for 7 days).
 - **From source:** see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-A download contains `u-boot.bin`, `u-boot-env.bin`, `boot.vfat`, `rootfs.ext4.xz`,
+A download contains `u-boot.bin`, `u-boot-env.bin`, `rootfs.ext4.xz`,
 `SHA256SUMS`, `packages.manifest` and `flash.py`.
 
 ## Flash
@@ -56,8 +56,8 @@ this image). The board must already run U-Boot with working DFU: a board recover
 U-Boot.
 
 > **The first flash is a clean slate.** It replaces U-Boot and rewrites the partition
-> table: everything on the old rootfs, `update` and `home` partitions is lost. Later
-> flashes keep your settings (below). The IFWI and the factory partition are never touched.
+> table: everything on the old rootfs, `update` and `home` partitions is lost. The IFWI
+> and the factory partition are never touched.
 
 ## First steps on the board
 
@@ -76,8 +76,6 @@ U-Boot.
 
 - **Time zone and locale:** `sudo timedatectl set-timezone Area/City`;
   `sudo dpkg-reconfigure locales`. The image defaults to UTC and `C.UTF-8`.
-- **Reflash later** with `sudo edison-dfu` on the board, then `uv run flash.py --only
-  rootfs` on the computer (or the full flash for a new U-Boot or environment).
 
 ## Updates
 
@@ -95,38 +93,44 @@ restarted during an upgrade, so as not to cut off a session over USB networking)
 | Package | Contents |
 |---|---|
 | `linux-image-edison` | Depends on the current kernel, `linux-image-<version>-edison` |
-| `edison-base` | The Edison's services, tools (`edison-config`, `edison-dfu`, `edison-apparmor`, ...), udev rules, network config, ACPI overlays |
+| `edison-base` | The Edison's services, tools (`edison-dfu`, ...), udev rules, network config, ACPI overlays, kernel command line defaults |
 | `edison-firmware` | The board's WiFi calibration and Bluetooth patch |
 
-A new kernel is copied to the boot partition (mounted at `/boot/firmware`), and the one it
-replaces is kept as `vmlinuz.prev`, which U-Boot boots if `vmlinuz` can't be read. If a new
-kernel fails to boot, flash a release's kernel back with `uv run flash.py --only boot` (U-Boot
-always opens a DFU window at power-on). U-Boot and its environment don't update through apt:
-those need a full flash. Boards flashed with v0.2.8 or earlier need one full flash with
-v0.2.9 or later to get the repository.
+U-Boot and its environment don't update through apt: those need a full flash. Boards
+flashed with v0.2.8 or earlier need one full flash with v0.2.9 or later.
 
-## What survives a reflash
+## Booting and the kernel command line
 
-The eMMC has one large root filesystem (with `/home`) plus a small `config` partition,
-mounted at `/var/lib/edison`, which flashing never writes. It keeps:
+The board boots the standard way for U-Boot boards running Debian: kernels live in `/boot`,
+and U-Boot reads `/boot/extlinux/extlinux.conf`, which Debian's
+[u-boot-menu](https://manpages.debian.org/trixie/u-boot-menu/u-boot-update.8.en.html)
+rewrites whenever a kernel is installed or removed. It lists every installed kernel, newest
+first, so on the serial console you can pick an older one if a new kernel won't boot (the
+menu waits one second). To change the kernel command line, set `U_BOOT_PARAMETERS` in
+`/etc/default/u-boot`, run `sudo u-boot-update`, and reboot. Start from the Edison's
+defaults (in `/usr/share/u-boot-menu/conf.d/edison.conf`):
 
-- WiFi networks, SSH host keys (no "host key changed" warnings), users, passwords, groups
-  and SSH `authorized_keys`, the hostname, time zone and locale, Bluetooth pairings, the
-  uploaded Arduino sketch, and any extra systemd-networkd config you put in
-  `/var/lib/edison/network/`;
-- any other files you list in `/var/lib/edison/files.list` (one absolute path per line).
+```
+U_BOOT_PARAMETERS="ro rootfstype=ext4 rootwait console=ttyS2,115200n8 earlyprintk=ttyS2,115200n8,keep loglevel=4"
+```
 
-Settings are saved when they change and at every clean shutdown; `sudo edison-config save`
-saves now. Everything else in the root filesystem, **including `/home`**, is replaced by a
-reflash. Keep data that must survive on a microSD card (the Kit for Arduino has a slot), and
-update installed software with `apt` rather than by reflashing.
+If the board doesn't boot at all, U-Boot still opens its DFU window at every power-on:
+reflash it (below).
+
+## Reflashing
+
+Update with `apt`, as above; a reflash is a reinstall. It replaces the whole root
+filesystem, settings and `/home` included, so the board starts fresh: change the password,
+set up WiFi again, re-upload the sketch, and expect a new SSH host key. USB networking needs
+no setup, so a freshly flashed board is always reachable at `192.168.2.15`. Keep data you
+want to survive a reflash elsewhere, such as a microSD card (the Kit for Arduino has a
+slot). To reflash, run `sudo edison-dfu` on the board, then `uv run flash.py` on the
+computer.
 
 | Partition | Size | Contents |
 |---|---|---|
 | 1–6 | 32 MiB | U-Boot (×2), its environment (×2), factory data, panic |
-| `boot` | 64 MiB | the kernel |
-| `config` | 64 MiB | settings that survive reflashing |
-| `rootfs` | the rest (~3.5 GiB) | Debian, including `/home` |
+| `rootfs` | the rest (~3.6 GiB) | Debian, including `/boot` and `/home` |
 
 ## Notes
 
@@ -148,14 +152,11 @@ for common problems.
 - **SPI on the header** (IO11–IO13) is switched on by a sketch's `SPI.begin()`; until then
   those pins work as GPIO. Kernel drivers for SPI devices need an ACPI overlay: see
   `acpi/README.md`.
-- **AppArmor** is built into the kernel and installed, but off: it costs nothing unless
-  wanted. `sudo edison-apparmor on` and a reboot turn it on (`off` reverses it,
-  `sudo edison-apparmor status` shows it). Debian's base profiles then load, though none of
-  the services in this image has one: it's for profiles you add (`apparmor-profiles`,
-  `apparmor-profiles-extra`, or your own). It adds `apparmor` to the kernel's security
-  modules through U-Boot's `extra_bootargs`, which survives reflashing (after a reflash,
-  from the second boot); a board flashed before v0.2.9 needs one full flash first. SELinux
-  is disabled: Debian ships no policy for it.
+- **AppArmor** is on, as in Debian, with Debian's base profiles (`sudo aa-status`); none
+  of the services in this image has a profile of its own, so it matters for profiles you add
+  (`apparmor-profiles`, `apparmor-profiles-extra`, your own). It costs about 1.3 s of boot
+  and 10 MB of memory; to turn it off, add `apparmor=0` to the kernel command line (above).
+  SELinux is disabled: Debian ships no policy for it.
 
 ## Licence
 

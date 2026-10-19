@@ -44,7 +44,7 @@ jobs:
       - name: Package
         run: |
           mkdir dist
-          cp out/uboot/u-boot.bin out/image/boot.vfat out/image/u-boot-env.bin dist/
+          cp out/uboot/u-boot.bin out/image/u-boot-env.bin dist/
           xz -T0 -6 -c out/image/rootfs.ext4 > dist/rootfs.ext4.xz
           cp out/kernel/config dist/kernel.config
           cp out/image/KERNEL_RELEASE dist/
@@ -54,7 +54,7 @@ jobs:
           cp scripts/flash.py dist/
           # Our packages, kernel included; releases publish them to the apt repository.
           cp out/image/debs/*.deb dist/
-          (cd dist && sha256sum u-boot.bin boot.vfat u-boot-env.bin rootfs.ext4.xz > SHA256SUMS)
+          (cd dist && sha256sum u-boot.bin u-boot-env.bin rootfs.ext4.xz > SHA256SUMS)
           ls -l dist
           {
             echo "### Build"

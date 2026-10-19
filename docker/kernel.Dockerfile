@@ -42,12 +42,11 @@ RUN DEB_BUILD_PROFILES=pkg.linux-upstream.nokernelheaders \
  && mkdir -p /out \
  && mv /linux-image-*.deb /out/ \
  && rm -f /out/linux-image-*-dbg_*.deb \
- && cp arch/x86/boot/bzImage /out/vmlinuz \
  && cp .config /out/config \
  && cp System.map /out/System.map \
  && make -s kernelrelease > /out/RELEASE \
  && echo "${KDEB_PKGVERSION}" > /out/PKGVERSION \
- && cd /out && sha256sum vmlinuz linux-image-*.deb > SHA256SUMS
+ && cd /out && sha256sum linux-image-*.deb > SHA256SUMS
 
 FROM scratch
 COPY --from=build /out/ /

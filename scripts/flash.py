@@ -3,7 +3,7 @@
 # requires-python = ">=3.9"
 # dependencies = []
 # ///
-"""Flash an Intel Edison over DFU: U-Boot, its environment, kernel and rootfs.
+"""Flash an Intel Edison over DFU: U-Boot, its environment and the rootfs (with the kernel).
 
 The IFWI is not touched. Needs dfu-util on PATH (and, on Linux, the udev rule
 from edison-recovery/udev/; on Windows, the WinUSB driver for 8087:0a99).
@@ -45,7 +45,6 @@ PARTS = [
     ("u-boot0", None),
     ("u-boot-env0", "u-boot-env.bin"),
     ("u-boot-env1", "u-boot-env.bin"),
-    ("boot", "boot.vfat"),
     ("rootfs", "rootfs.ext4"),
 ]
 # Interrupting these could leave the board unable to boot (then only
@@ -255,7 +254,7 @@ def missed_window(log: list[str]) -> bool:
 def phases(plan: list[tuple[str, Path]]) -> list[list[tuple[str, Path]]]:
     """Split the plan into U-Boot (+ environment) and the rest. The new environment
     carries the partition layout, which U-Boot applies on the next boot, so the board
-    resets in between and boot/rootfs are written into the (possibly new) layout."""
+    resets in between and the rootfs is written into the (possibly new) layout."""
     first = [p for p in plan if p[0] in CRITICAL]
     rest = [p for p in plan if p[0] not in CRITICAL]
     return [ph for ph in (first, rest) if ph]
@@ -328,7 +327,7 @@ def build_plan(
 
 def default_images_dir(script_dir: Path = HERE) -> Path:
     """The script's own directory in a downloaded image, else out/image."""
-    if (script_dir / "SHA256SUMS").is_file() and (script_dir / "boot.vfat").is_file():
+    if (script_dir / "SHA256SUMS").is_file() and (script_dir / "u-boot-env.bin").is_file():
         return script_dir
     return script_dir.parent / "out" / "image"
 
@@ -338,8 +337,8 @@ def explain_interrupt(alt: str | None) -> None:
         say("\nCancelled before writing anything.")
     elif alt in CRITICAL:
         say(
-            f"\nStopped after {alt}. U-Boot is intact, but the kernel and rootfs",
-            "weren't written: run flash.py again and reboot the board.",
+            f"\nStopped after {alt}. U-Boot is intact, but the rootfs",
+            "wasn't written: run flash.py again and reboot the board.",
         )
     else:
         say(

@@ -13,8 +13,8 @@ scripts/build.sh
 - `out/uboot/`: mainline U-Boot, built from
   [edison-recovery](https://github.com/open-edison/edison-recovery) at the commit pinned
   in `scripts/build.sh` (set `EDISON_RECOVERY_DIR` to use a local checkout instead)
-- `out/kernel/`: the kernel package (`linux-image-<release>_*.deb`), `vmlinuz`, `config`
-- `out/image/`: `boot.vfat` (kernel), `rootfs.ext4`, `u-boot-env.bin`, `packages.manifest`,
+- `out/kernel/`: the kernel package (`linux-image-<release>_*.deb`), `config`
+- `out/image/`: `rootfs.ext4` (kernel in `/boot`), `u-boot-env.bin`, `packages.manifest`,
   and `debs/`: our packages (below), which the rootfs installs like any other
 - `out/cache/`: downloaded Debian packages, reused by later builds
 
@@ -33,11 +33,11 @@ Then `uv run scripts/flash.py` flashes `out/`.
 | `rootfs/build-rootfs.sh` | Our packages (via `package/build-debs.sh`), `mmdebstrap`, images |
 | `rootfs/packages.txt` | Debian packages |
 | `rootfs/overlay/` | Image-only files (`fstab`, hostname, locale), not packaged |
-| `package/edison-base/` | The `edison-base` package's files at their installed paths: units, udev rules, network config, tools in `usr/sbin` (`edison-config` handles the settings that survive reflashing, `edison-dfu` the one-shot DFU request), the kernel hook that copies new kernels to the boot partition, the apt source and signing key |
+| `package/edison-base/` | The `edison-base` package's files at their installed paths: units, udev rules, network config, tools in `usr/sbin` (`edison-dfu` makes the one-shot DFU request), the kernel command line defaults for u-boot-menu (`usr/share/u-boot-menu/conf.d/edison.conf`), the apt source and signing key |
 | `package/debian/` | Packaging (debhelper) for `edison-base`, `edison-firmware` and the `linux-image-edison` meta package; the version comes from `git describe` |
 | `package/firmware.lock` | Edison WiFi NVRAM and Bluetooth firmware (`edison-firmware`): URLs + SHA256 |
 | `acpi/` | Arduino kit ACPI overlays (meta-acpi) and which ones to load |
-| `uboot/env.txt` | U-Boot environment: partition layout, boot flow, DFU (window and one-shot request) |
+| `uboot/env.txt` | U-Boot environment: partition layout (rootfs marked bootable), boot flow (`bootflow scan`, which finds `/boot/extlinux/extlinux.conf`), DFU (window and one-shot request) |
 | `docs/` | Per-OS flashing guides |
 | `scripts/flash.py` | DFU flasher, standard library only |
 | `scripts/apt-repo.sh` | Indexes and signs the apt repository (release workflow) |
@@ -69,7 +69,7 @@ uvx ruff format . && uvx ruff check .
 ```
 
 ```
-shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh package/build-debs.sh package/edison-base/usr/sbin/* package/edison-base/etc/kernel/postinst.d/* package/debian/*.postinst
+shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh package/build-debs.sh package/edison-base/usr/sbin/* package/edison-base/usr/share/u-boot-menu/conf.d/*.conf package/debian/*.postinst
 ```
 
 ## Releasing

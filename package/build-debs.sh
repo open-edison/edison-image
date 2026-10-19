@@ -11,7 +11,7 @@ cp -r /src/package "$work"
 # Checkouts on some filesystems (WSL's /mnt) show every file as executable, and debhelper
 # runs executable config files (.install etc.) as scripts.
 find "$work/debian" "$work/edison-base" -type f -exec chmod 0644 {} +
-chmod 0755 "$work/debian/rules" "$work"/edison-base/usr/sbin/* "$work"/edison-base/etc/kernel/postinst.d/*
+chmod 0755 "$work/debian/rules" "$work"/edison-base/usr/sbin/*
 mkdir -p "$work/build/acpi" "$work/build/firmware" /out/debs
 rm -f /out/debs/*.deb
 

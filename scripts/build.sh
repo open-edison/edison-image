@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Build U-Boot, the kernel, then the rootfs and flashable images, into out/.
 #   out/uboot/   u-boot.bin (built by edison-recovery at a pinned commit)
-#   out/kernel/  linux-image-*.deb, vmlinuz, config, RELEASE, PKGVERSION
-#   out/image/   boot.vfat, rootfs.ext4, u-boot-env.bin, debs/ (our packages, kernel included)
+#   out/kernel/  linux-image-*.deb, config, RELEASE, PKGVERSION
+#   out/image/   rootfs.ext4 (kernel in /boot), u-boot-env.bin, debs/ (our packages, kernel
+#                included)
 # Usage: scripts/build.sh [uboot|kernel|rootfs|all]   (default: all)
 #
 # EDISON_RECOVERY_DIR=/path/to/edison-recovery uses a local checkout instead of fetching

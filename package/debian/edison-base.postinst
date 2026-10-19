@@ -4,8 +4,12 @@ set -e
 if [ "$1" = configure ]; then
     # The udev rules give this group the GPIO, PWM, SPI and CPU latency devices.
     getent group gpio >/dev/null || groupadd --system gpio
-    # Mount points (fstab) for the config, factory and boot partitions.
-    mkdir -p /var/lib/edison /factory /boot/firmware
+    # Mount point (fstab) for the factory partition.
+    mkdir -p /factory
+    # Pick up the kernel command line defaults in /usr/share/u-boot-menu/conf.d/edison.conf.
+    if command -v u-boot-update >/dev/null; then
+        u-boot-update
+    fi
 fi
 
 #DEBHELPER#
