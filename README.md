@@ -111,7 +111,7 @@ menu waits one second). To change the kernel command line, set `U_BOOT_PARAMETER
 defaults (in `/usr/share/u-boot-menu/conf.d/edison.conf`):
 
 ```
-U_BOOT_PARAMETERS="ro rootfstype=ext4 rootwait console=ttyS2,115200n8 earlyprintk=ttyS2,115200n8,keep loglevel=4"
+U_BOOT_PARAMETERS="ro rootfstype=ext4 rootwait console=ttyS2,115200n8 quiet"
 ```
 
 If the board doesn't boot at all, U-Boot still opens its DFU window at every power-on:
