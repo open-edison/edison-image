@@ -42,6 +42,8 @@ if [ "$what" = uboot ] || [ "$what" = all ]; then
 fi
 
 if [ "$what" = kernel ] || [ "$what" = all ]; then
+    # --output adds to the directory: clear out the previous build's kernel packages.
+    rm -rf "$out/kernel"
     docker build --output "$out/kernel" --build-arg KDEB_PKGVERSION="$kernel_version-$deb_version" \
         -f docker/kernel.Dockerfile .
 fi
